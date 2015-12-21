@@ -1,5 +1,4 @@
 VERSION 5.00
-Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
 Begin VB.Form Form1 
    Caption         =   "Wordlist Cleaner"
    ClientHeight    =   8115
@@ -166,13 +165,6 @@ Begin VB.Form Form1
       Top             =   1440
       Width           =   5655
    End
-   Begin MSComDlg.CommonDialog CommonDialog 
-      Left            =   6240
-      Top             =   120
-      _ExtentX        =   847
-      _ExtentY        =   847
-      _Version        =   393216
-   End
    Begin VB.CommandButton btnInputFile 
       Caption         =   "..."
       Height          =   375
@@ -319,44 +311,22 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Private Declare Function SetCursor Lib "user32" (ByVal hCursor As Long) As Long
-Private Declare Function LoadCursor Lib "user32" Alias "LoadCursorA" (ByVal hInstance As Long, ByVal lpCursorName As Long) As Long
-Private Declare Function SHBrowseForFolder Lib "shell32" (lpbi As BrowseInfo) As Long
-Private Declare Function SHGetPathFromIDList Lib "shell32" (ByVal pidList As Long, ByVal lpBuffer As String) As Long
-Private Declare Function lstrcat Lib "kernel32" Alias "lstrcatA" (ByVal lpString1 As String, ByVal lpString2 As String) As Long
-
-Private Type BrowseInfo
- hWndOwner      As Long
- pIDLRoot       As Long
- pszDisplayName As Long
- lpszTitle      As Long
- ulFlags        As Long
- lpfnCallback   As Long
- lParam         As Long
- iImage         As Long
-End Type
-
-Private last_path As String
+Option Explicit
 
 Private Sub btnInputFile_Click()
 If lblFileMode.ForeColor = &H80000012 Then 'Browse for File
- CommonDialog.FileName = ""
- CommonDialog.Filter = "Text Files (*.txt)|*.txt|All files (*.*)|*.*"
- CommonDialog.DefaultExt = "txt"
- CommonDialog.DialogTitle = "Choose Input File"
- CommonDialog.InitDir = IIf((last_path <> ""), last_path & "\", "C:\")
- CommonDialog.ShowOpen
- If (CommonDialog.CancelError = False) And (CommonDialog.FileName <> "") Then
-  txtInputFile.Text = CommonDialog.FileName
+ Dim file_to_open As String
+ file_to_open = ShowOpenFileDialog(Me.hwnd, "Choose Input File")
+ If (file_to_open <> "") Then
+  txtInputFile.Text = file_to_open
   Dim fso As Scripting.FileSystemObject
   Set fso = New Scripting.FileSystemObject
-  last_path = fso.GetParentFolderName(txtInputFile.Text)
   txtOutputFile.Text = fso.GetParentFolderName(txtInputFile.Text) & "\" & fso.GetBaseName(txtInputFile.Text) & "_CLEANED." & fso.GetExtensionName(txtInputFile.Text)
   Set fso = Nothing
  End If
 Else 'Browse for Directory
  Dim tBrowseInfo As BrowseInfo
- tBrowseInfo.hWndOwner = Me.hWnd
+ tBrowseInfo.hwndOwner = Me.hwnd
  tBrowseInfo.lpszTitle = lstrcat("Choose Input Directory", "")
  tBrowseInfo.ulFlags = 1 + 2 + &H4&
  Dim tmpLong As Long
@@ -374,22 +344,14 @@ End Sub
 
 Private Sub btnOutputFile_Click()
 If lblFileMode.ForeColor = &H80000012 Then 'Browse for File
- CommonDialog.FileName = ""
- CommonDialog.Filter = "Text Files (*.txt)|*.txt|All files (*.*)|*.*"
- CommonDialog.DefaultExt = "txt"
- CommonDialog.DialogTitle = "Choose Output File"
- CommonDialog.InitDir = IIf((last_path <> ""), last_path & "\", "C:\")
- CommonDialog.ShowSave
- If (CommonDialog.CancelError = False) And (CommonDialog.FileName <> "") Then
-  txtOutputFile.Text = CommonDialog.FileName
-  Dim fso As Scripting.FileSystemObject
-  Set fso = New Scripting.FileSystemObject
-  last_path = fso.GetParentFolderName(CommonDialog.FileName)
-  Set fso = Nothing
+ Dim file_to_save As String
+ file_to_save = ShowSaveFileDialog(Me.hwnd, "Choose Output File")
+ If (file_to_save <> "") Then
+  txtOutputFile.Text = file_to_save
  End If
-Else
+Else 'Browse for Directory
  Dim tBrowseInfo As BrowseInfo
- tBrowseInfo.hWndOwner = Me.hWnd
+ tBrowseInfo.hwndOwner = Me.hwnd
  tBrowseInfo.lpszTitle = lstrcat("Choose Output Directory", "")
  tBrowseInfo.ulFlags = 1 + 2 + &H4&
  Dim tmpLong As Long
@@ -450,126 +412,7 @@ Do While Not (input_text_stream.AtEndOfStream)
  
  'replace special characters
  If (chkReplaceAccent.Value = 1) Then
- one_line_in = Replace$(one_line_in, "ƒ", "f")
- one_line_in = Replace$(one_line_in, "„", """")
- one_line_in = Replace$(one_line_in, "…", "...")
- one_line_in = Replace$(one_line_in, "†", "t")
- one_line_in = Replace$(one_line_in, "‡", "t")
- one_line_in = Replace$(one_line_in, "ˆ", "'")
- one_line_in = Replace$(one_line_in, "š", "s")
- one_line_in = Replace$(one_line_in, "‹", "<")
- one_line_in = Replace$(one_line_in, "œ", "oe")
- one_line_in = Replace$(one_line_in, "ž", "z")
- one_line_in = Replace$(one_line_in, "‘", "'")
- one_line_in = Replace$(one_line_in, "’", "'")
- one_line_in = Replace$(one_line_in, "“", """")
- one_line_in = Replace$(one_line_in, "”", """")
- one_line_in = Replace$(one_line_in, "•", ".")
- one_line_in = Replace$(one_line_in, "–", "-")
- one_line_in = Replace$(one_line_in, "—", "-")
- one_line_in = Replace$(one_line_in, ChrW(732), "~")
- one_line_in = Replace$(one_line_in, "™", "TM")
- one_line_in = Replace$(one_line_in, "š", "s")
- one_line_in = Replace$(one_line_in, "›", ">")
- one_line_in = Replace$(one_line_in, "œ", "oe")
- one_line_in = Replace$(one_line_in, "ž", "z")
- one_line_in = Replace$(one_line_in, "ÿ", "y")
- one_line_in = Replace$(one_line_in, ChrW(160), " ")
- one_line_in = Replace$(one_line_in, "¡", "!")
- one_line_in = Replace$(one_line_in, "¢", "c")
- one_line_in = Replace$(one_line_in, "£", "L")
- one_line_in = Replace$(one_line_in, "¤", "o")
- one_line_in = Replace$(one_line_in, "¥", "Y")
- one_line_in = Replace$(one_line_in, "¦", "|")
- one_line_in = Replace$(one_line_in, "§", "S")
- one_line_in = Replace$(one_line_in, "¨", "..")
- one_line_in = Replace$(one_line_in, "©", "(c)")
- one_line_in = Replace$(one_line_in, "ª", "2")
- one_line_in = Replace$(one_line_in, "«", "<<")
- one_line_in = Replace$(one_line_in, "¬", "-")
- one_line_in = Replace$(one_line_in, "­", "-")
- one_line_in = Replace$(one_line_in, "®", "(r)")
- one_line_in = Replace$(one_line_in, "¯", "-")
- one_line_in = Replace$(one_line_in, "°", "o")
- one_line_in = Replace$(one_line_in, "±", "+")
- one_line_in = Replace$(one_line_in, "²", "z")
- one_line_in = Replace$(one_line_in, "³", "z")
- one_line_in = Replace$(one_line_in, "´", "'")
- one_line_in = Replace$(one_line_in, "µ", "u")
- one_line_in = Replace$(one_line_in, "¶", "P")
- one_line_in = Replace$(one_line_in, "·", "-")
- one_line_in = Replace$(one_line_in, "¸", ",")
- one_line_in = Replace$(one_line_in, "¹", "2")
- one_line_in = Replace$(one_line_in, "º", "o")
- one_line_in = Replace$(one_line_in, "»", ">>")
- one_line_in = Replace$(one_line_in, "¼", "1/4")
- one_line_in = Replace$(one_line_in, "½", "1/2")
- one_line_in = Replace$(one_line_in, "¾", "3/4")
- one_line_in = Replace$(one_line_in, "¿", "?")
- one_line_in = Replace$(one_line_in, "à", "a")
- one_line_in = Replace$(one_line_in, "á", "a")
- one_line_in = Replace$(one_line_in, "â", "a")
- one_line_in = Replace$(one_line_in, "ã", "a")
- one_line_in = Replace$(one_line_in, "ä", "a")
- one_line_in = Replace$(one_line_in, "å", "a")
- one_line_in = Replace$(one_line_in, "æ", "ae")
- one_line_in = Replace$(one_line_in, "ç", "c")
- one_line_in = Replace$(one_line_in, "è", "e")
- one_line_in = Replace$(one_line_in, "é", "e")
- one_line_in = Replace$(one_line_in, "ê", "e")
- one_line_in = Replace$(one_line_in, "ë", "e")
- one_line_in = Replace$(one_line_in, "ì", "i")
- one_line_in = Replace$(one_line_in, "í", "i")
- one_line_in = Replace$(one_line_in, "î", "i")
- one_line_in = Replace$(one_line_in, "ï", "i")
- one_line_in = Replace$(one_line_in, "ð", "o")
- one_line_in = Replace$(one_line_in, "ñ", "n")
- one_line_in = Replace$(one_line_in, "ò", "o")
- one_line_in = Replace$(one_line_in, "ó", "o")
- one_line_in = Replace$(one_line_in, "ô", "o")
- one_line_in = Replace$(one_line_in, "õ", "o")
- one_line_in = Replace$(one_line_in, "ö", "o")
- one_line_in = Replace$(one_line_in, "×", "x")
- one_line_in = Replace$(one_line_in, "ø", "o")
- one_line_in = Replace$(one_line_in, "ù", "u")
- one_line_in = Replace$(one_line_in, "ú", "u")
- one_line_in = Replace$(one_line_in, "û", "u")
- one_line_in = Replace$(one_line_in, "ü", "u")
- one_line_in = Replace$(one_line_in, "ý", "y")
- one_line_in = Replace$(one_line_in, "þ", "p")
- one_line_in = Replace$(one_line_in, "ß", "B")
- one_line_in = Replace$(one_line_in, "à", "a")
- one_line_in = Replace$(one_line_in, "á", "a")
- one_line_in = Replace$(one_line_in, "â", "a")
- one_line_in = Replace$(one_line_in, "ã", "a")
- one_line_in = Replace$(one_line_in, "ä", "a")
- one_line_in = Replace$(one_line_in, "å", "a")
- one_line_in = Replace$(one_line_in, "æ", "ae")
- one_line_in = Replace$(one_line_in, "ç", "c")
- one_line_in = Replace$(one_line_in, "è", "e")
- one_line_in = Replace$(one_line_in, "é", "e")
- one_line_in = Replace$(one_line_in, "ê", "e")
- one_line_in = Replace$(one_line_in, "ë", "e")
- one_line_in = Replace$(one_line_in, "ì", "i")
- one_line_in = Replace$(one_line_in, "í", "i")
- one_line_in = Replace$(one_line_in, "î", "i")
- one_line_in = Replace$(one_line_in, "ï", "i")
- one_line_in = Replace$(one_line_in, "ð", "o")
- one_line_in = Replace$(one_line_in, "ñ", "n")
- one_line_in = Replace$(one_line_in, "ò", "o")
- one_line_in = Replace$(one_line_in, "ó", "o")
- one_line_in = Replace$(one_line_in, "ô", "o")
- one_line_in = Replace$(one_line_in, "õ", "o")
- one_line_in = Replace$(one_line_in, "ö", "o")
- one_line_in = Replace$(one_line_in, "÷", "-")
- one_line_in = Replace$(one_line_in, "ø", "o")
- one_line_in = Replace$(one_line_in, "ù", "u")
- one_line_in = Replace$(one_line_in, "ú", "u")
- one_line_in = Replace$(one_line_in, "û", "u")
- one_line_in = Replace$(one_line_in, "ü", "u")
- one_line_in = Replace$(one_line_in, "ý", "y")
- one_line_in = Replace$(one_line_in, "þ", "p")
- one_line_in = Replace$(one_line_in, "ÿ", "y")
+  Call replace_diacritics(one_line_in)
  End If
  
  'trim whitespace
@@ -679,6 +522,18 @@ ElseIf (lblDirectoryMode.ForeColor = &H80000012) And (is_folder(txtOutputFile.Te
   Exit Sub
  End If
 End If
+
+Dim msgbox_result As VbMsgBoxResult
+If (txtOutputFile.Text <> "") Then
+ If is_file(txtOutputFile.Text) = True Then
+  msgbox_result = MsgBox("A file named """ & txtOutputFile.Text & """ already exists. Replace?", vbExclamation + vbYesNo, "Warning")
+  If (msgbox_result = vbNo) Then
+   Call btnOutputFile_Click
+   Exit Sub
+  End If
+ End If
+End If
+
 btnProcess.Enabled = False
 If lblFileMode.ForeColor = &H80000012 Then 'Process File
  Call process_one_file(txtInputFile.Text, txtOutputFile.Text)
@@ -725,14 +580,18 @@ Private Sub chkRemoveNumeric_Click()
  lblNumericChar.Enabled = chkRemoveNumeric.Value
 End Sub
 
+Private Sub Form_Load()
+ RemoveMenu GetSystemMenu(Me.hwnd, 0), 2, &H400& 'prevent resizing
+End Sub
+
 Private Sub lblDirectoryMode_Click()
  If lblDirectoryMode.ForeColor = &HFF0000 Then 'blue
   lblDirectoryMode.ForeColor = &H80000012 'black
   lblDirectoryMode.FontUnderline = False
   lblFileMode.ForeColor = &HFF0000 'blue
   lblFileMode.FontUnderline = True
-  lblInputFile.Caption = "Input Directory:"
-  lblOutputFile.Caption = "Output Directory:"
+  lblInputFile.caption = "Input Directory:"
+  lblOutputFile.caption = "Output Directory:"
   Dim fso As Scripting.FileSystemObject
   Set fso = New Scripting.FileSystemObject
   If (is_file(txtInputFile.Text) = True) Then
@@ -751,8 +610,8 @@ If lblFileMode.ForeColor = &HFF0000 Then 'blue
   lblFileMode.FontUnderline = False
   lblDirectoryMode.ForeColor = &HFF0000 'blue
   lblDirectoryMode.FontUnderline = True
-  lblInputFile.Caption = "Input File:"
-  lblOutputFile.Caption = "Output File:"
+  lblInputFile.caption = "Input File:"
+  lblOutputFile.caption = "Output File:"
   txtInputFile.Text = ""
   txtOutputFile.Text = ""
  End If
@@ -808,21 +667,3 @@ End Sub
 Private Sub txtNumericMax_LostFocus()
  Call ensure_numbers_only(txtNumericMax)
 End Sub
-
-Private Function is_file(str As String) As Boolean
- Dim fso As Scripting.FileSystemObject
- Set fso = New Scripting.FileSystemObject
- Dim return_value As Boolean
- return_value = fso.FileExists(str)
- Set fso = Nothing
- is_file = return_value
-End Function
-
-Private Function is_folder(str As String) As Boolean
- Dim fso As Scripting.FileSystemObject
- Set fso = New Scripting.FileSystemObject
- Dim return_value As Boolean
- return_value = fso.FolderExists(str)
- Set fso = Nothing
- is_folder = return_value
-End Function
